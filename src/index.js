@@ -9,20 +9,84 @@ app.use(cors());
 
 const users = [];
 
-function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+function checksExistsUserAccount (request, response, next) {
+  const { username } = request.headers;
+
+  const user = users.find((user) => user.username === username);
+
+  if (!user) {
+    return response.status(404).json({
+      error: 'User not found',
+    });
+  }
+
+  request.user = user;
+
+  return next();
 }
 
-function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+function checksCreateTodosUserAvailability (request, response, next) {
+  const { user } = request;
+
+  if (!user.pro && user.todos.length >= 10) {
+    return response.status(403).json({
+      error: 'Your todos creation limit has been reached',
+    });
+  }
+  return next();
 }
 
-function checksTodoExists(request, response, next) {
-  // Complete aqui
+function checksTodoExists (request, response, next) {
+  const { username } = request.headers;
+
+  const { id } = request.params;
+
+  const user = users.find((user) => user.username === username);
+
+  if (!user) {
+    return response.status(404).json({
+      error: 'User not found',
+    });
+  }
+
+  const uuidIsValid = validate(id);
+
+  if (!uuidIsValid) {
+    return response.status(400).json({
+      error: 'Invalid id',
+    });
+  }
+
+  const todo = user.todos.find((todo) => todo.id = id);
+
+  if (!todo) {
+    return response.status(404).json({
+      error: 'Todo not found',
+    });
+  }
+
+  request.user = user;
+  request.todo = todo;
+
+  return next();
 }
 
-function findUserById(request, response, next) {
-  // Complete aqui
+function findUserById (request, response, next) {
+  const { id } = request.params;
+
+  const user = users.find(
+    (user) => user.id === id,
+  );
+
+  if (!user) {
+    return response.status(404).json({
+      error: 'User not found',
+    });
+  }
+
+  request.user = user;
+
+  return next();
 }
 
 app.post('/users', (request, response) => {
@@ -39,7 +103,7 @@ app.post('/users', (request, response) => {
     name,
     username,
     pro: false,
-    todos: []
+    todos: [],
   };
 
   users.push(user);
@@ -80,7 +144,7 @@ app.post('/todos', checksExistsUserAccount, checksCreateTodosUserAvailability, (
     title,
     deadline: new Date(deadline),
     done: false,
-    created_at: new Date()
+    created_at: new Date(),
   };
 
   user.todos.push(newTodo);
@@ -126,5 +190,5 @@ module.exports = {
   checksExistsUserAccount,
   checksCreateTodosUserAvailability,
   checksTodoExists,
-  findUserById
+  findUserById,
 };
